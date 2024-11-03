@@ -1,34 +1,42 @@
+# Your workflow name
 name: Deploy to Railway
 
+# Run workflow on every push to main branch
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
+# Your workflow jobs
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      # Check-out your repository
+      - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
+      
+      # Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: your-docker-username/your-app-name:latest  # Replace with your Docker Hub username and app name
+      # Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t your-docker-image-name .
 
+      # Push Docker image to Docker Hub
+      - name: Push Docker image
+        run: |
+          docker push your-docker-image-name
+
+      # Deploy to Railway using the Railway API
       - name: Deploy to Railway
-        uses: railwayapp/railway-action@v1
-        with:
-          railway_api_key: ${{ secrets.RAILWAY_API_KEY }}
-          railway_project_id: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          curl -X POST "https://railway.app/api/v2/project/${{ secrets.RAILWAY_PROJECT_ID }}/deploy" \
+          -H "Authorization: Bearer ${{ secrets.RAILWAY_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{"image": "your-docker-image-name"}'
